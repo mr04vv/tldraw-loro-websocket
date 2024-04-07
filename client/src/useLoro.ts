@@ -3,10 +3,10 @@ import { useMemo } from "react";
 
 export const useLoro = () => {
   const doc = useMemo(() => new Loro(), []);
-
+  const docname = new URLSearchParams(location.search).get("docname");
   const wsProvider = useMemo(() => {
-    return new WebSocket("ws://localhost:1234?docname=room1");
-  }, []);
+    return new WebSocket(`ws://localhost:1234?docname=${docname}`);
+  }, [docname]);
   wsProvider.binaryType = "arraybuffer";
 
   return {

@@ -3,45 +3,43 @@ import { getDoc } from "./getDoc";
 import { closeConn } from "./closeConns";
 import { send } from "./send";
 import { messageListener } from "./messageListener";
+import { knex } from "./knex";
 const pingTimeout = 30000;
+
 export const setupWSConnection = async (conn: WebSocket, docName: string) => {
   conn.binaryType = "arraybuffer";
 
   let isDocLoaded = false;
-  let queuedMessages = [];
+  let queuedMessages: any[] = [];
   let isConnectionAlive = true;
 
-  const [doc, isNew] = getDoc(docName);
+  const [doc, isNew] = getDoc(docName, conn);
 
   doc.conns.set(conn, new Set());
 
   const sendSyncStep1 = () => {
-    send(doc, conn, new TextEncoder().encode("sync"));
+    send(doc, conn, doc.exportSnapshot());
   };
 
   if (isNew) {
     isDocLoaded = true;
+    const updates = await knex("items")
+      .where("docname", doc.name)
+      .orderBy("id");
 
+    doc.importUpdateBatch(updates.map((row) => new Uint8Array(row.update)));
     sendSyncStep1();
-    // bindState(doc).then(() => {
-    //   if (!isConnectionAlive) {
-    //     return;
-    //   }
-
-    //   isDocLoaded = true;
-    //   queuedMessages.forEach((message) => messageListener(conn, doc, message));
-    //   queuedMessages = [];
-    //   sendSyncStep1();
-    // });
+    queuedMessages.forEach((message) => messageListener(conn, doc, message));
   } else {
     isDocLoaded = true;
     sendSyncStep1();
   }
 
   conn.on("message", (message) => {
-    console.log("message received", isDocLoaded);
     if (isDocLoaded) {
-      messageListener(conn, doc, new Uint8Array(message as ArrayBuffer));
+      const update = new Uint8Array(message as ArrayBuffer);
+      doc.import(update);
+      messageListener(conn, doc, update);
     } else {
       queuedMessages.push(new Uint8Array(message as ArrayBuffer));
     }

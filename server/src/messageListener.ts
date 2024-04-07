@@ -9,7 +9,7 @@ export const messageListener = async (
   message: Uint8Array
 ) => {
   try {
-    propagateUpdate(doc, message, conn);
+    // propagateUpdate(doc, message, conn);
   } catch (err: any) {
     console.log(err.stack);
   }

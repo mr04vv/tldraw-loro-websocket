@@ -1,15 +1,24 @@
-import { Loro } from "loro-crdt";
+import { Loro, VersionVector } from "loro-crdt";
 import { WebSocket } from "ws";
 import { updateHandler } from "./updateHandler";
 
 export class WSSharedDoc extends Loro {
   name: string;
   conns: Map<WebSocket, any>;
-
-  constructor(name: string) {
+  versionVector: VersionVector;
+  conn: WebSocket;
+  constructor(name: string, conn: WebSocket) {
     super();
     this.name = name;
     this.conns = new Map();
+    this.versionVector = this.version();
+    this.conn = conn;
+
+    this.subscribe((event) => {
+      const updates = this.exportFrom(this.versionVector);
+      updateHandler(updates, this.conn, this);
+      this.versionVector = this.version();
+    });
     // this.subscribe((event) => {
     //   const origin = event.origin;
     //   const update = event.events.map((e) => {
