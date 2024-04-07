@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
 import "tldraw/tldraw.css";
 import { useLoro } from "./useLoro";
-import { LoroEventBatch, VersionVector } from "loro-crdt";
+import { LoroEventBatch, OpId, VersionVector } from "loro-crdt";
 import { TLRecord, TLShape, TLShapeId, Tldraw, useEditor } from "tldraw";
 function App() {
   return (
@@ -21,6 +21,8 @@ const Component = () => {
 
   const editor = useEditor();
   const { doc, wsProvider } = useLoro();
+
+  console.log("peerId", doc.peerId);
 
   const includeAssetOrShapeString = (str: string) => {
     return str.includes("asset") || str.includes("shape");
@@ -55,25 +57,50 @@ const Component = () => {
     [doc]
   );
 
+  const versionsRef = useRef<OpId[][]>([]);
+  const [versionNum, setVersionNum] = useState(-1);
+  const [maxVersion, setMaxVersion] = useState(-1);
   const handleMapUpdate = (e: LoroEventBatch) => {
-    console.log("hogehoge");
+    if (e.by !== "checkout") {
+      versionsRef.current.push(doc.frontiers());
+      setMaxVersion(versionsRef.current.length - 1);
+      setVersionNum(versionsRef.current.length - 1);
+    }
     if (e.by === "local") {
       const updated = doc.exportFrom(versionRef.current);
-      console.log(updated);
       wsProvider.send(updated);
     }
     if (e.by === "checkout") {
-      console.log("checkout", e);
+      const updateShapes: TLRecord[] = [];
+      const deleteShapeIds: TLShapeId[] = [];
+      const events = e.events;
+      for (const event of events) {
+        if (event.diff.type === "map") {
+          const map = event.diff.updated;
+          Object.keys(map).forEach((key) => {
+            const shape = map[key] as unknown as TLShape;
+            if (shape === null) {
+              deleteShapeIds.push(key as TLShapeId);
+            } else {
+              updateShapes.push(shape);
+            }
+          });
+        }
+      }
+      editor.store.mergeRemoteChanges(() => {
+        editor.store.put([...updateShapes]);
+        editor.store.remove([...deleteShapeIds]);
+      });
     }
     if (e.by === "import") {
       const updateShapes: TLRecord[] = [];
       const deleteShapeIds: TLShapeId[] = [];
       const events = e.events;
-      console.log(events);
+      console.log(doc.frontiers());
       for (const event of events) {
         if (event.diff.type === "map") {
           const map = event.diff.updated;
-          console.log(map);
+
           Object.keys(map).forEach((key) => {
             const shape = map[key] as unknown as TLShape;
             if (shape === null) {
@@ -94,7 +121,6 @@ const Component = () => {
   const handleWsMessage = useCallback(
     async (ev: MessageEvent) => {
       const bytes = new Uint8Array(ev.data as ArrayBuffer);
-      console.log(bytes);
       doc.import(bytes);
       versionRef.current = doc.version();
     },
@@ -159,5 +185,50 @@ const Component = () => {
     });
     return listen;
   }, [_handleAdded, doc, editor.store, removeFromMap, updateMap]);
-  return <></>;
+
+  useEffect(() => {
+    setTimeout(() => {
+      localStorage.setItem("versionsRef", JSON.stringify(versionsRef.current));
+    }, 1000);
+  });
+
+  useEffect(() => {
+    const versionsRefFromLS = localStorage.getItem("versionsRef");
+    versionsRef.current = JSON.parse(versionsRefFromLS || "[]");
+  }, []);
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 200,
+        left: 100,
+        zIndex: 1000,
+      }}
+    >
+      <input
+        type="range"
+        name="speed"
+        min={-1}
+        value={versionNum}
+        max={maxVersion}
+        style={{
+          width: 500,
+        }}
+        onChange={(e) => {
+          const v = Number(e.target.value);
+          setVersionNum(v);
+          if (v === -1) {
+            doc.checkout([]);
+          } else {
+            if (v === versionsRef.current.length - 1) {
+              doc.checkoutToLatest();
+            } else {
+              console.log(versionsRef.current);
+              doc.checkout(versionsRef.current[v]);
+            }
+          }
+        }}
+      />
+    </div>
+  );
 };
