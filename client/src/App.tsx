@@ -56,8 +56,10 @@ const Component = () => {
   );
 
   const handleMapUpdate = (e: LoroEventBatch) => {
+    console.log("hogehoge");
     if (e.by === "local") {
       const updated = doc.exportFrom(versionRef.current);
+      console.log(updated);
       wsProvider.send(updated);
     }
     if (e.by === "checkout") {
@@ -67,9 +69,11 @@ const Component = () => {
       const updateShapes: TLRecord[] = [];
       const deleteShapeIds: TLShapeId[] = [];
       const events = e.events;
+      console.log(events);
       for (const event of events) {
         if (event.diff.type === "map") {
           const map = event.diff.updated;
+          console.log(map);
           Object.keys(map).forEach((key) => {
             const shape = map[key] as unknown as TLShape;
             if (shape === null) {
@@ -90,6 +94,7 @@ const Component = () => {
   const handleWsMessage = useCallback(
     async (ev: MessageEvent) => {
       const bytes = new Uint8Array(ev.data as ArrayBuffer);
+      console.log(bytes);
       doc.import(bytes);
       versionRef.current = doc.version();
     },
@@ -149,6 +154,7 @@ const Component = () => {
           removeFromMap(shape);
         });
       }
+      versionRef.current = doc.version();
       doc.commit();
     });
     return listen;
