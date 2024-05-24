@@ -4,6 +4,7 @@ import { closeConn } from "./closeConns";
 import { send } from "./send";
 import { messageListener } from "./messageListener";
 import { knex } from "./knex";
+import { decodeImportBlobMeta } from "loro-crdt";
 const pingTimeout = 30000;
 
 export const setupWSConnection = async (conn: WebSocket, docName: string) => {
@@ -17,8 +18,16 @@ export const setupWSConnection = async (conn: WebSocket, docName: string) => {
 
   doc.conns.set(conn, new Set());
 
-  const sendSyncStep1 = () => {
-    send(doc, conn, doc.exportSnapshot());
+  const sendSyncStep1 = async () => {
+    const updates = await knex("items")
+      .where("docname", doc.name)
+      .orderBy("id");
+    const updatesss = updates.map((row) => new Uint8Array(row.update));
+    for (const update of updatesss) {
+      //   console.log(update);
+      //   console.log(decodeImportBlobMeta(update));
+      //   send(doc, conn, update);
+    }
   };
 
   if (isNew) {
@@ -27,7 +36,8 @@ export const setupWSConnection = async (conn: WebSocket, docName: string) => {
       .where("docname", doc.name)
       .orderBy("id");
 
-    doc.importUpdateBatch(updates.map((row) => new Uint8Array(row.update)));
+    const updatesss = updates.map((row) => new Uint8Array(row.update));
+
     sendSyncStep1();
     queuedMessages.forEach((message) => messageListener(conn, doc, message));
   } else {
@@ -39,7 +49,8 @@ export const setupWSConnection = async (conn: WebSocket, docName: string) => {
     if (isDocLoaded) {
       const update = new Uint8Array(message as ArrayBuffer);
       doc.import(update);
-      messageListener(conn, doc, update);
+      //   console.debug(update);
+      //   messageListener(conn, doc, update);
     } else {
       queuedMessages.push(new Uint8Array(message as ArrayBuffer));
     }

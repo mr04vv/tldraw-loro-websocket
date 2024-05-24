@@ -12,6 +12,7 @@ export const propagateUpdate = (
   // syncProtocol.writeUpdate(encoder, update);
   // const message = encoding.toUint8Array(encoder);
   doc.conns.forEach((_, conn) => {
+    console.debug(ws === conn);
     if (ws === conn) return;
     conn.binaryType = "arraybuffer";
     send(doc, conn, update);

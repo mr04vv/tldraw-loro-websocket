@@ -12,7 +12,7 @@ app.get("/", (c) => {
   return c.text("Hello Hono!");
 });
 
-const port = 1234;
+const port = 1235;
 console.log(`Server is running on port ${port}`);
 
 const server = serve({

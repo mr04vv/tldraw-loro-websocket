@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import "tldraw/tldraw.css";
 import { useLoro } from "./useLoro";
@@ -21,6 +21,10 @@ const Component = () => {
 
   const editor = useEditor();
   const { doc, wsProvider } = useLoro();
+
+  useEffect(() => {
+    console.debug(editor.getPageStates()[0].editingShapeId);
+  }, [editor]);
 
   console.log("peerId", doc.peerId);
 
@@ -45,6 +49,7 @@ const Component = () => {
         // TODO: ここにキャンバスに追加されたときの処理を書く
         if (!isAssetOrShape(shape?.typeName)) return;
         updateMap(shape);
+        // editor.cancel();
       });
     },
     [updateMap]
@@ -61,12 +66,14 @@ const Component = () => {
   const [versionNum, setVersionNum] = useState(-1);
   const [maxVersion, setMaxVersion] = useState(-1);
   const handleMapUpdate = (e: LoroEventBatch) => {
+    console.log(i);
     if (e.by !== "checkout") {
       versionsRef.current.push(doc.frontiers());
       setMaxVersion(versionsRef.current.length - 1);
       setVersionNum(versionsRef.current.length - 1);
     }
     if (e.by === "local") {
+      console.debug("hogehoge");
       const updated = doc.exportFrom(versionRef.current);
       wsProvider.send(updated);
     }
@@ -93,6 +100,7 @@ const Component = () => {
       });
     }
     if (e.by === "import") {
+      console.debug("import");
       const updateShapes: TLRecord[] = [];
       const deleteShapeIds: TLShapeId[] = [];
       const events = e.events;
@@ -118,13 +126,16 @@ const Component = () => {
     }
   };
 
+  let i = 0;
   const handleWsMessage = useCallback(
     async (ev: MessageEvent) => {
       const bytes = new Uint8Array(ev.data as ArrayBuffer);
+      console.log(i++);
+      // doc.import()
       doc.import(bytes);
       versionRef.current = doc.version();
     },
-    [doc]
+    [doc, i]
   );
 
   useEffect(() => {
@@ -141,6 +152,9 @@ const Component = () => {
     };
   });
 
+  const selectedShapes = editor.inputs;
+  const a = useMemo(() => selectedShapes, [selectedShapes]);
+  console.debug(a);
   useEffect(() => {
     const listen = editor.store.listen((e) => {
       const { changes, source } = e;
@@ -158,6 +172,8 @@ const Component = () => {
         );
         if (includeShape) {
           _handleAdded(addedObj);
+          versionRef.current = doc.version();
+          doc.commit();
         }
       }
 
@@ -179,9 +195,9 @@ const Component = () => {
         removedObj.forEach((shape) => {
           removeFromMap(shape);
         });
+        versionRef.current = doc.version();
+        doc.commit();
       }
-      versionRef.current = doc.version();
-      doc.commit();
     });
     return listen;
   }, [_handleAdded, doc, editor.store, removeFromMap, updateMap]);

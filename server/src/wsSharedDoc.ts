@@ -15,6 +15,7 @@ export class WSSharedDoc extends Loro {
     this.conn = conn;
 
     this.subscribe((event) => {
+      console.debug("evenet");
       const updates = this.exportFrom(this.versionVector);
       updateHandler(updates, this.conn, this);
       this.versionVector = this.version();
