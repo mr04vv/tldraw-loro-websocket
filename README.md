@@ -2,18 +2,19 @@
 
 ## Get started
 
-websocket サーバー起動
+docker で
+
+- postgres
+- redis (現在不使用)
+- vite(react)
+- hono(websocket server)
+
+が起動します
 
 ```
-cd server
-npm install
-npm run dev
+docker compose build
+docker compose up
 ```
 
-client 起動
-
-```
-cd client
-npm install
-npm run dev
-```
+access
+http://localhost:5173
