@@ -1,0 +1,52 @@
+version: "3.8"
+
+services:
+  client:
+    build:
+      context: .
+      dockerfile: ./client/Dockerfile
+    ports:
+      - 5173:5173
+    volumes:
+      - ./client:/client
+      - /client/node_modules
+  server:
+    build:
+      context: .
+      dockerfile: ./server/Dockerfile
+    ports:
+      - 1234:1234
+    volumes:
+      - ./server:/server
+      - /server/node_modules
+    command: npm run dev
+    environment:
+      POSTGRES_HOST: postgres
+      REDIS_HOST: host.docker.internal
+      PORT: 1234
+      POSTGRES_PORT: 5432
+    working_dir: /server
+  postgres:
+    image: postgres:15.3-alpine3.18
+    expose:
+      - 5432
+    ports:
+      - 25432:5432
+    volumes:
+      - postgres_data:/data/db
+      - ./server/create-db.sql:/docker-entrypoint-initdb.d/create_database.sql
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: "trust"
+      POSTGRES_USER: postgres
+      POSTGRES_DB: app
+  redis:
+    image: redis:7.0.11-alpine3.18
+    ports:
+      - 6379:6379
+    volumes:
+      - redis_data:/data/db
+    tty: true
+
+volumes:
+  postgres_data:
+  redis_data:

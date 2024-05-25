@@ -1,9 +1,7 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
-import { WebSocket, WebSocketServer } from "ws";
-import { docs } from "./map";
-import { WSSharedDoc } from "./wsSharedDoc";
-import { send } from "./send";
+import { WebSocketServer } from "ws";
+
 import { setupWSConnection } from "./setupWsConnection";
 import urls from "url";
 const app = new Hono();
@@ -29,7 +27,6 @@ wss.on("connection", async (ws, req) => {
   const docname = url.query["docname"];
   if (typeof docname !== "string") return;
   setupWSConnection(ws, docname);
-  console.log("connected");
 });
 
 server.on("upgrade", (req, socket, head) => {

@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import "./App.css";
 import "tldraw/tldraw.css";
 import { useLoro } from "./useLoro";
-import { LoroEventBatch, OpId, VersionVector } from "loro-crdt";
+import { LoroEventBatch, VersionVector } from "loro-crdt";
 import { TLRecord, TLShape, TLShapeId, Tldraw, useEditor } from "tldraw";
 function App() {
   return (
@@ -21,8 +21,6 @@ const Component = () => {
 
   const editor = useEditor();
   const { doc, wsProvider } = useLoro();
-
-  console.log("peerId", doc.peerId);
 
   const includeAssetOrShapeString = (str: string) => {
     return str.includes("asset") || str.includes("shape");
@@ -57,15 +55,7 @@ const Component = () => {
     [doc]
   );
 
-  const versionsRef = useRef<OpId[][]>([]);
-  const [versionNum, setVersionNum] = useState(-1);
-  const [maxVersion, setMaxVersion] = useState(-1);
   const handleMapUpdate = (e: LoroEventBatch) => {
-    if (e.by !== "checkout") {
-      versionsRef.current.push(doc.frontiers());
-      setMaxVersion(versionsRef.current.length - 1);
-      setVersionNum(versionsRef.current.length - 1);
-    }
     if (e.by === "local") {
       const updated = doc.exportFrom(versionRef.current);
       wsProvider.send(updated);
@@ -96,7 +86,6 @@ const Component = () => {
       const updateShapes: TLRecord[] = [];
       const deleteShapeIds: TLShapeId[] = [];
       const events = e.events;
-      console.log(doc.frontiers());
       for (const event of events) {
         if (event.diff.type === "map") {
           const map = event.diff.updated;
@@ -186,16 +175,6 @@ const Component = () => {
     return listen;
   }, [_handleAdded, doc, editor.store, removeFromMap, updateMap]);
 
-  useEffect(() => {
-    setTimeout(() => {
-      localStorage.setItem("versionsRef", JSON.stringify(versionsRef.current));
-    }, 1000);
-  });
-
-  useEffect(() => {
-    const versionsRefFromLS = localStorage.getItem("versionsRef");
-    versionsRef.current = JSON.parse(versionsRefFromLS || "[]");
-  }, []);
   return (
     <div
       style={{
@@ -205,7 +184,7 @@ const Component = () => {
         zIndex: 1000,
       }}
     >
-      <input
+      {/* <input
         type="range"
         name="speed"
         min={-1}
@@ -228,7 +207,7 @@ const Component = () => {
             }
           }
         }}
-      />
+      /> */}
     </div>
   );
 };
