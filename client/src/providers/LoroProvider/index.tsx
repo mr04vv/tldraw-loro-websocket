@@ -1,9 +1,21 @@
-import { Loro } from "loro-crdt";
-import { useMemo } from "react";
+import { Awareness, Loro } from "loro-crdt";
+import { useEffect, useMemo } from "react";
 import { createContextWrapper } from "../../utils/createContextWrapper";
+
+export type AwarenessState = {
+  userId: string;
+  position: {
+    x: number;
+    y: number;
+    z: number;
+  };
+  userName: string;
+};
 type LoroContextType = {
   doc: Loro;
   wsProvider: WebSocket;
+  awareness: Awareness<AwarenessState>;
+  userName: string;
 };
 const [useLoro, LoroContext] = createContextWrapper<LoroContextType>();
 // eslint-disable-next-line react-refresh/only-export-components
@@ -15,13 +27,31 @@ type Props = {
 export const LoroProvider = ({ children }: Props) => {
   const doc = useMemo(() => new Loro(), []);
   const docname = new URLSearchParams(location.search).get("docname");
+  const userName =
+    new URLSearchParams(location.search).get("userName") || "name";
   const wsProvider = useMemo(() => {
     return new WebSocket(`ws://localhost:1234?docname=${docname}`);
   }, [docname]);
   wsProvider.binaryType = "arraybuffer";
+  const awareness = useMemo(
+    () => new Awareness<AwarenessState>(doc.peerIdStr),
+    [doc.peerIdStr]
+  );
+
+  useEffect(() => {
+    awareness.addListener((_, origin) => {
+      if (origin !== "local") return;
+      const peerId = awareness.getLocalState()?.userId;
+      if (!peerId) return;
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
+      const encoded = awareness.encode([peerId]);
+      wsProvider.send(encoded);
+    });
+  }, [awareness, wsProvider]);
 
   return (
-    <LoroContext.Provider value={{ doc, wsProvider }}>
+    <LoroContext.Provider value={{ doc, wsProvider, awareness, userName }}>
       {children}
     </LoroContext.Provider>
   );

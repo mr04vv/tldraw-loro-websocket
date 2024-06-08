@@ -7,7 +7,7 @@ import { useLoro } from "../providers";
 export const useView = () => {
   const editor = useEditor();
   const { updateMap, removeFromMap } = useCrdt();
-  const { doc, wsProvider } = useLoro();
+  const { doc, wsProvider, awareness, userName } = useLoro();
   const versionRef = useRef<VersionVector>();
 
   const includeAssetOrShapeString = (str: string) => {
@@ -94,16 +94,22 @@ export const useView = () => {
 
   const handleWsMessage = useCallback(
     async (ev: MessageEvent) => {
-      const bytes = new Uint8Array(ev.data as ArrayBuffer);
+      const message = ev.data;
+      const arrayMessage = new Uint8Array(message);
+      if (arrayMessage[0] === 1) {
+        awareness.apply(new Uint8Array(message));
+        return;
+      }
+
+      const bytes = new Uint8Array(message as ArrayBuffer);
       doc.import(bytes);
       versionRef.current = doc.version();
     },
-    [doc]
+    [awareness, doc]
   );
 
   const handleMapUpdate = useCallback(
     (e: LoroEventBatch) => {
-      console.debug("ioio");
       if (e.by === "local") {
         const updated = doc.exportFrom(versionRef.current);
         wsProvider.send(updated);
@@ -170,4 +176,24 @@ export const useView = () => {
       doc.unsubscribe(subscription);
     };
   }, [doc, handleMapUpdate]);
+
+  useEffect(() => {
+    const handleMouseEvent = (e: MouseEvent) => {
+      const pagePosition = editor.screenToPage({ x: e.clientX, y: e.clientY });
+      awareness.setLocalState({
+        position: {
+          x: pagePosition.x,
+          y: pagePosition.y,
+          z: editor.getCamera().z,
+        },
+        userId: doc.peerIdStr,
+        userName,
+      });
+    };
+
+    window.addEventListener("mousemove", handleMouseEvent);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseEvent);
+    };
+  }, [awareness, doc.peerIdStr, editor]);
 };

@@ -36,10 +36,19 @@ export const setupWSConnection = async (conn: WebSocket, docName: string) => {
   }
 
   conn.on("message", (message) => {
+    // awareness
     if (isDocLoaded) {
       const update = new Uint8Array(message as ArrayBuffer);
-      doc.import(update);
-      messageListener(conn, doc, update);
+      try {
+        doc.import(update);
+        messageListener(conn, doc, update);
+      } catch (err: any) {
+        doc.conns.forEach((_, _conn) => {
+          if (conn === _conn) return;
+          _conn.binaryType = "arraybuffer";
+          send(doc, _conn, update);
+        });
+      }
     } else {
       queuedMessages.push(new Uint8Array(message as ArrayBuffer));
     }
