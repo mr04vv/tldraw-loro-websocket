@@ -94,16 +94,21 @@ export const useView = () => {
 
   const handleWsMessage = useCallback(
     async (ev: MessageEvent) => {
-      const message = ev.data;
-      const arrayMessage = new Uint8Array(message);
-      if (arrayMessage[0] === 1) {
-        awareness.apply(new Uint8Array(message));
-        return;
-      }
+      try {
+        const data = ev.data;
+        const arrayMessage = new Uint8Array(data);
+        const message = arrayMessage.slice(1);
+        if (arrayMessage[0] === 1) {
+          awareness.apply(new Uint8Array(message as ArrayBuffer));
+          return;
+        }
 
-      const bytes = new Uint8Array(message as ArrayBuffer);
-      doc.import(bytes);
-      versionRef.current = doc.version();
+        const bytes = new Uint8Array(message as ArrayBuffer);
+        doc.import(bytes);
+        versionRef.current = doc.version();
+      } catch (err) {
+        console.error(err);
+      }
     },
     [awareness, doc]
   );
@@ -112,7 +117,9 @@ export const useView = () => {
     (e: LoroEventBatch) => {
       if (e.by === "local") {
         const updated = doc.exportFrom(versionRef.current);
-        wsProvider.send(updated);
+        const messageType = 0;
+        const message = new Uint8Array([messageType, ...updated]);
+        wsProvider.send(message);
       }
       if (e.by === "checkout") {
         const updateShapes: TLRecord[] = [];

@@ -14,6 +14,8 @@ export const propagateUpdate = (
   doc.conns.forEach((_, conn) => {
     if (ws === conn) return;
     conn.binaryType = "arraybuffer";
-    send(doc, conn, update);
+    // updateの先頭に0をつける
+    const message = new Uint8Array([0, ...update]);
+    send(doc, conn, message);
   });
 };

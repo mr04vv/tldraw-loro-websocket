@@ -45,8 +45,11 @@ export const LoroProvider = ({ children }: Props) => {
       if (!peerId) return;
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-expect-error
-      const encoded = awareness.encode([peerId]);
-      wsProvider.send(encoded);
+      const encoded = awareness.encode([peerId, peerId, peerId]);
+      const messageType = 1;
+      // messageTypeを先頭に付けてencodedを送信
+      const message = new Uint8Array([messageType, ...encoded]);
+      wsProvider.send(message);
     });
   }, [awareness, wsProvider]);
 
