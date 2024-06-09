@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { AwarenessState, useLoro } from "../../providers";
 import { motion } from "framer-motion";
+import { AwarenessState, useLoro } from "../../../../providers";
 
 export const CollaboratorCursors = () => {
   const { awareness } = useLoro();

@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useRef } from "react";
 import { TLRecord, TLShape, TLShapeId, useEditor } from "tldraw";
 import { LoroEventBatch, VersionVector } from "loro-crdt";
-import { useCrdt } from "../hooks";
-import { useLoro } from "../providers";
+import { useCrdt } from "..";
+import { useLoro } from "../../providers";
 
-export const useView = () => {
+/**
+ * This hook is responsible for syncing the editor state with the CRDT.
+ * C3 means Connect Canvas and CRDT.
+ */
+export const useC3Effect = () => {
   const editor = useEditor();
   const { updateMap, removeFromMap } = useCrdt();
   const { doc, wsProvider, awareness, userName } = useLoro();
@@ -23,7 +27,7 @@ export const useView = () => {
       const addedObj = Object.values(added);
       if (!addedObj.length) return;
       const includeShape = addedObjKeys.some((key) =>
-        includeAssetOrShapeString(key)
+        includeAssetOrShapeString(key),
       );
       if (includeShape) {
         addedObj.forEach((shape) => {
@@ -34,7 +38,7 @@ export const useView = () => {
       versionRef.current = doc.version();
       doc.commit();
     },
-    [doc, updateMap]
+    [doc, updateMap],
   );
 
   const handleUpdatedObject = useCallback(
@@ -43,7 +47,7 @@ export const useView = () => {
       const updatedObj = Object.values(updated);
       if (!updatedObj.length) return;
       const includeShape = updatedObjKeys.some((key) =>
-        includeAssetOrShapeString(key)
+        includeAssetOrShapeString(key),
       );
       if (includeShape) {
         updatedObj.forEach((shape) => {
@@ -55,7 +59,7 @@ export const useView = () => {
         doc.commit();
       }
     },
-    [doc, updateMap]
+    [doc, updateMap],
   );
 
   const handleRemovedObject = useCallback(
@@ -68,7 +72,7 @@ export const useView = () => {
       versionRef.current = doc.version();
       doc.commit();
     },
-    [doc, removeFromMap]
+    [doc, removeFromMap],
   );
 
   useEffect(() => {
@@ -105,7 +109,7 @@ export const useView = () => {
       doc.import(bytes);
       versionRef.current = doc.version();
     },
-    [awareness, doc]
+    [awareness, doc],
   );
 
   const handleMapUpdate = useCallback(
@@ -160,7 +164,7 @@ export const useView = () => {
         });
       }
     },
-    [doc, editor.store, wsProvider]
+    [doc, editor.store, wsProvider],
   );
 
   useEffect(() => {
