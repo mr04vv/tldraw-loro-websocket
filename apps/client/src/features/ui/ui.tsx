@@ -1,4 +1,5 @@
-import { useKeyboardShortcuts } from "tldraw";
+import { useEffect } from "react";
+import { useKeyboardShortcuts } from "./hooks";
 
 type UIProps = {
   children: React.ReactNode;
@@ -7,7 +8,14 @@ type UIProps = {
 export const UI = (props: UIProps) => {
   const { children } = props;
 
-  useKeyboardShortcuts();
+  const { bindKeys } = useKeyboardShortcuts();
+
+  useEffect(() => {
+    const { disposables } = bindKeys();
+    return () => {
+      disposables.forEach((d) => d());
+    };
+  }, [bindKeys]);
 
   return <>{children}</>;
 };
