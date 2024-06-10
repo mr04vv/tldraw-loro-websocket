@@ -24,6 +24,8 @@ type Props = {
   children: React.ReactNode;
 };
 
+const isNumberString = (str: string): str is `${number}` => !isNaN(Number(str));
+
 export const LoroProvider = ({ children }: Props) => {
   const doc = useMemo(() => new Loro(), []);
   const docname = new URLSearchParams(location.search).get("docname");
@@ -35,16 +37,16 @@ export const LoroProvider = ({ children }: Props) => {
   wsProvider.binaryType = "arraybuffer";
   const awareness = useMemo(
     () => new Awareness<AwarenessState>(doc.peerIdStr),
-    [doc.peerIdStr]
+    [doc.peerIdStr],
   );
 
   useEffect(() => {
     awareness.addListener((_, origin) => {
       if (origin !== "local") return;
+      if (wsProvider.readyState !== wsProvider.OPEN) return;
       const peerId = awareness.getLocalState()?.userId;
       if (!peerId) return;
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
+      if (!isNumberString(peerId)) return;
       const encoded = awareness.encode([peerId]);
       wsProvider.send(encoded);
     });
