@@ -1,11 +1,16 @@
 import { TldrawEditor, useEditorComponents } from "@tldraw/editor";
 import { useC3Effect } from "../../hooks";
-import { SelectTool } from "tldraw";
+import { SelectTool, TextShapeUtil } from "tldraw";
 import { UI } from "../ui";
+import { MessageShapeTool, MessageShapeUtil } from "./shapes";
 
 export const Editor = () => {
   return (
-    <TldrawEditor initialState="select" shapeUtils={[]} tools={[SelectTool]}>
+    <TldrawEditor
+      initialState="select"
+      shapeUtils={[TextShapeUtil, MessageShapeUtil]}
+      tools={[SelectTool, MessageShapeTool]}
+    >
       <UI>
         <Inner />
       </UI>

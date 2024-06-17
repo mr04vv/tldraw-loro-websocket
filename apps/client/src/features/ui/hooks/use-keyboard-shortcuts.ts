@@ -8,8 +8,18 @@ export const useKeyboardShortcuts = () => {
   const bindKeys = useCallback(() => {
     const disposables = new Array<() => void>();
 
-    hotkeys("backspace,del", () => {
+    const bindkey = (key: string, callback: (event: KeyboardEvent) => void) => {
+      hotkeys(key, callback);
+      disposables.push(() => {
+        hotkeys.unbind(key);
+      });
+    };
+
+    bindkey("backspace,del", () => {
       editor.deleteShapes(editor.getSelectedShapeIds());
+    });
+    bindkey("m", () => {
+      editor.setCurrentTool("message");
     });
 
     return { disposables };
