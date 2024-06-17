@@ -1,5 +1,4 @@
-import "./App.css";
-import "tldraw/tldraw.css";
+import "@tldraw/editor/editor.css";
 import { LoroProvider } from "./providers";
 import { CollaboratorCursors } from "./features/collaborator";
 import { Editor } from "./features/editor";
