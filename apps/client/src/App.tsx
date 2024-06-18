@@ -1,15 +1,19 @@
 import "@tldraw/editor/editor.css";
-import { LoroProvider } from "./providers";
-import { CollaboratorCursors } from "./features/collaborator";
+import { LogProvider, LoroProvider } from "./providers";
 import { Editor } from "./features/editor";
+import { Logger } from "./features/logger";
 
 function App() {
   return (
     <LoroProvider>
-      <CollaboratorCursors />
-      <div style={{ position: "fixed", inset: 0 }}>
-        <Editor />
-      </div>
+      <LogProvider>
+        <div style={{ position: "fixed", zIndex: 999 }}>
+          <Logger />
+        </div>
+        <div style={{ position: "fixed", inset: 0 }}>
+          <Editor />
+        </div>
+      </LogProvider>
     </LoroProvider>
   );
 }
