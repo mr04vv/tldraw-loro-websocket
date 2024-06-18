@@ -30,6 +30,21 @@ export const LogProvider = ({ children }: Props) => {
   });
 
   const log = useCallback((log: Log) => {
+    const logMessage = `[${log.type}] ${log.message}`;
+    switch (log.type) {
+      case "info":
+        console.debug(logMessage);
+        break;
+      case "warn":
+        console.warn(logMessage);
+        break;
+      case "error":
+        console.error(logMessage);
+        break;
+      default:
+        console.debug(logMessage);
+    }
+
     setState((prevState) => {
       const logs = [...prevState.logs, log];
       if (logs.length > prevState.maxLogs) {

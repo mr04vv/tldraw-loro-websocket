@@ -1,10 +1,17 @@
-import { Editor, Rectangle2d, ShapeUtil, WeakMapCache } from "@tldraw/editor";
+import {
+  Editor,
+  Rectangle2d,
+  ShapeUtil,
+  TLShapeUtilFlag,
+  WeakMapCache,
+} from "@tldraw/editor";
 import {
   WBMessageShape,
   messageShapeMigrations,
   messageShapeProps,
 } from "./message-shape-schema";
 import { FONT_FAMILIES, FONT_SIZES, TEXT_PROPS } from "../schemas/text";
+import { TextLabel } from "tldraw";
 
 /** @note 脳死コピペ */
 const sizeCache = new WeakMapCache<
@@ -16,6 +23,8 @@ export class MessageShapeUtil extends ShapeUtil<WBMessageShape> {
   static override type = "message" as const;
   static override props = messageShapeProps;
   static override migrations = messageShapeMigrations;
+
+  override canEdit = () => true;
 
   getDefaultProps(): WBMessageShape["props"] {
     return {
@@ -46,8 +55,36 @@ export class MessageShapeUtil extends ShapeUtil<WBMessageShape> {
   }
 
   component(shape: WBMessageShape) {
-    const { id, props } = shape;
-    return <p>{props.text}</p>;
+    const {
+      id,
+      props: { font, size, text, scale },
+    } = shape;
+
+    const { width, height } = this.getMinDimensions(shape);
+    const isSelected = shape.id === this.editor.getOnlySelectedShapeId();
+
+    return (
+      <TextLabel
+        id={id}
+        classNamePrefix="tl-text-shape"
+        type="text"
+        font={font}
+        fontSize={FONT_SIZES[size]}
+        lineHeight={TEXT_PROPS.lineHeight}
+        align="middle"
+        verticalAlign="middle"
+        text={text}
+        labelColor="black"
+        isSelected={isSelected}
+        textWidth={width}
+        textHeight={height}
+        style={{
+          transform: `scale(${scale})`,
+          transformOrigin: "top left",
+        }}
+        wrap
+      />
+    );
   }
 
   indicator(shape: WBMessageShape) {
